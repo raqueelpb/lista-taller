@@ -558,15 +558,17 @@ function renderAll() {
     tbody.innerHTML = `<tr><td colspan="4"><div class="empty-msg">Aún no hay nadie en la lista… añade tu primera fila 🌸</div></td></tr>`;
   } else {
     rows.forEach((row, i) => renderRow(tbody, row, i));
-    // Recalcular checks tras render (datos cargados de Sheets)
+    // Recalcular checks tras cargar de Sheets
     setTimeout(() => {
-      rows.forEach((_, i) => {
-        const inv = document.querySelector(`.cell-input[data-idx="${i}"][data-field="invitada"]`);
-        const enc = document.querySelector(`.cell-input[data-idx="${i}"][data-field="encargada"]`);
+      rows.forEach((row, i) => {
         const check = document.getElementById('check-' + i);
-        if (check) check.style.opacity = (inv?.value.trim() && enc?.value.trim()) ? '1' : '0';
+        if (check) {
+          const inv = (row.invitada || '').trim();
+          const enc = (row.encargada || '').trim();
+          check.style.opacity = (inv && enc) ? '1' : '0';
+        }
       });
-    }, 0);
+    }, 50);
   }
   updateStats();
 }
@@ -585,8 +587,7 @@ function renderRow(tbody, row, i) {
                value="${escHtml(row.invitada || '')}"
                data-field="invitada"
                data-idx="${i}"
-               aria-label="Invitada fila ${i+1}"
-               oninput="updateCheck(this)">
+               aria-label="Invitada fila ${i+1}">
         <span class="cell-check" id="check-${i}" style="opacity:0">✓</span>
       </div>
     </td>
@@ -597,8 +598,7 @@ function renderRow(tbody, row, i) {
              value="${escHtml(row.encargada || '')}"
              data-field="encargada"
              data-idx="${i}"
-             aria-label="Encargada fila ${i+1}"
-             oninput="updateCheck(this)">
+             aria-label="Encargada fila ${i+1}">
     </td>
     <td class="col-actions">
       <div class="actions-wrap">
@@ -615,6 +615,14 @@ function renderRow(tbody, row, i) {
       const field = e.target.dataset.field;
       rows[idx][field] = e.target.value;
       updateStats();
+
+      // Actualizar check: solo visible si AMBOS campos rellenos
+      const check = document.getElementById('check-' + idx);
+      if (check) {
+        const inv = (rows[idx].invitada || '').trim();
+        const enc = (rows[idx].encargada || '').trim();
+        check.style.opacity = (inv && enc) ? '1' : '0';
+      }
 
       // Debounce: espera 800ms sin escribir antes de guardar
       clearTimeout(inputTimers[idx]);
@@ -704,16 +712,6 @@ function showToast(msg) {
   t.textContent = msg;
   t.classList.add('show');
   setTimeout(() => t.classList.remove('show'), 2800);
-}
-
-/* ── Check completo (invitada + encargada rellenas) ── */
-function updateCheck(inputEl) {
-  const idx = parseInt(inputEl.dataset.idx);
-  const allInputs = [...document.querySelectorAll('.cell-input')];
-  const inv = allInputs.find(el => parseInt(el.dataset.idx) === idx && el.dataset.field === 'invitada');
-  const enc = allInputs.find(el => parseInt(el.dataset.idx) === idx && el.dataset.field === 'encargada');
-  const check = document.getElementById('check-' + idx);
-  if (check) check.style.opacity = (inv?.value.trim() && enc?.value.trim()) ? '1' : '0';
 }
 
 /* ── Utils ── */

@@ -577,8 +577,8 @@ function renderRow(tbody, row, i) {
                data-field="invitada"
                data-idx="${i}"
                aria-label="Invitada fila ${i+1}"
-               oninput="this.nextElementSibling.style.opacity=(this.value.trim()?'1':'0')">
-        <span class="cell-check" style="opacity:${(row.invitada||'').trim()?'1':'0'}">✓</span>
+               oninput="updateCheck(this)">
+        <span class="cell-check" id="check-${i}" style="opacity:${((row.invitada||'').trim()&&(row.encargada||'').trim())?'1':'0'}">✓</span>
       </div>
     </td>
     <td class="col-encargada">
@@ -588,7 +588,8 @@ function renderRow(tbody, row, i) {
              value="${escHtml(row.encargada || '')}"
              data-field="encargada"
              data-idx="${i}"
-             aria-label="Encargada fila ${i+1}">
+             aria-label="Encargada fila ${i+1}"
+             oninput="updateCheck(this)">
     </td>
     <td class="col-actions">
       <div class="actions-wrap">
@@ -694,6 +695,16 @@ function showToast(msg) {
   t.textContent = msg;
   t.classList.add('show');
   setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+/* ── Check completo (invitada + encargada rellenas) ── */
+function updateCheck(inputEl) {
+  const idx = parseInt(inputEl.dataset.idx);
+  const allInputs = [...document.querySelectorAll('.cell-input')];
+  const inv = allInputs.find(el => parseInt(el.dataset.idx) === idx && el.dataset.field === 'invitada');
+  const enc = allInputs.find(el => parseInt(el.dataset.idx) === idx && el.dataset.field === 'encargada');
+  const check = document.getElementById('check-' + idx);
+  if (check) check.style.opacity = (inv?.value.trim() && enc?.value.trim()) ? '1' : '0';
 }
 
 /* ── Utils ── */

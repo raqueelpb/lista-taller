@@ -468,6 +468,7 @@ const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwI2YyhFgfZ3EAUWbDqV
 
 let rows = [];          // [{invitada, encargada, rowIndex}, ...]
 let inputTimers = {};   // debounce por fila
+let savingRows = {};    // flag para evitar guardados simultáneos
 
 /* ── Estado sync ── */
 function setSyncState(state, text) {
@@ -514,25 +515,37 @@ async function loadFromSheets() {
 
 /* ── Guardar fila (actualizar o añadir) ── */
 async function saveRow(row, spinnerEl) {
+  // Buscar el índice de esta fila en rows[]
+  const idx = rows.indexOf(row);
+
+  // Si ya se está guardando esta fila, reencolar
+  if (savingRows[idx]) {
+    clearTimeout(inputTimers['retry_' + idx]);
+    inputTimers['retry_' + idx] = setTimeout(() => saveRow(row, spinnerEl), 500);
+    return;
+  }
+
+  savingRows[idx] = true;
   if (spinnerEl) spinnerEl.classList.add('show');
   setSyncState('syncing', 'Guardando…');
 
   try {
-    const result = await apiPost({
-      action: 'saveRow',
-      rowIndex: row.rowIndex,   // null = nueva fila
-      invitada:  row.invitada,
-      encargada: row.encargada
+    const result = await apiCall({
+      action:    'saveRow',
+      rowIndex:  row.rowIndex ?? '',
+      invitada:  row.invitada  || '',
+      encargada: row.encargada || ''
     });
 
     if (result.rowIndex !== undefined) {
-      row.rowIndex = result.rowIndex;  // actualiza índice si era fila nueva
+      row.rowIndex = result.rowIndex;
     }
     setSyncState('ok', 'Guardado ✓');
   } catch(e) {
     setSyncState('error', 'Error al guardar');
     showToast('No se pudo guardar. Comprueba la conexión.');
   } finally {
+    savingRows[idx] = false;
     if (spinnerEl) spinnerEl.classList.remove('show');
   }
 }

@@ -558,6 +558,15 @@ function renderAll() {
     tbody.innerHTML = `<tr><td colspan="4"><div class="empty-msg">Aún no hay nadie en la lista… añade tu primera fila 🌸</div></td></tr>`;
   } else {
     rows.forEach((row, i) => renderRow(tbody, row, i));
+    // Recalcular checks tras render (datos cargados de Sheets)
+    setTimeout(() => {
+      rows.forEach((_, i) => {
+        const inv = document.querySelector(`.cell-input[data-idx="${i}"][data-field="invitada"]`);
+        const enc = document.querySelector(`.cell-input[data-idx="${i}"][data-field="encargada"]`);
+        const check = document.getElementById('check-' + i);
+        if (check) check.style.opacity = (inv?.value.trim() && enc?.value.trim()) ? '1' : '0';
+      });
+    }, 0);
   }
   updateStats();
 }
@@ -578,7 +587,7 @@ function renderRow(tbody, row, i) {
                data-idx="${i}"
                aria-label="Invitada fila ${i+1}"
                oninput="updateCheck(this)">
-        <span class="cell-check" id="check-${i}" style="opacity:${((row.invitada||'').trim()&&(row.encargada||'').trim())?'1':'0'}">✓</span>
+        <span class="cell-check" id="check-${i}" style="opacity:0">✓</span>
       </div>
     </td>
     <td class="col-encargada">
